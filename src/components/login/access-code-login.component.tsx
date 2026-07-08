@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { KeyRound } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth.store";
-import type { LoginResponse } from "@/types/scanner.types";
+import { loginResultSchema } from "@/types/scanner.types";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
@@ -58,8 +58,10 @@ const AccessCodeLoginComponent = () => {
         return;
       }
 
-      const result = await response.json<LoginResponse>();
-      login(result.data.accessToken, result.data.scanner, accessCode);
+      // BFF returns only the profile; the token is an httpOnly cookie and the
+      // reusable access code is never persisted client-side.
+      const { scanner } = loginResultSchema.parse(await response.json());
+      login(scanner, "access_code");
       router.push("/scan");
     } catch {
       setError("Connection error. Please try again.");

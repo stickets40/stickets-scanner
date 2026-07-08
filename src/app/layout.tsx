@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "@/styles/globals.css";
-import { AuthSync } from "@/components/ui/auth-sync";
+import { PwaProvider } from "@/components/ui/pwa-provider";
 
 export const metadata: Metadata = {
   title: "Stickets Scanner",
@@ -32,7 +32,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-dvh bg-background">
-        <AuthSync />
+        <PwaProvider />
         {children}
       </body>
     </html>

@@ -5,7 +5,10 @@ const PUBLIC_PATHS = ["/login"];
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Check for scanner token in cookie (synced from localStorage by layout)
+  // Presence check on the httpOnly token cookie set by the BFF on login. This
+  // only gates which SHELL renders — every real scan is re-authorized server-side
+  // by the backend (HS256 pin + type:'scanner' claim + live is_active check), so
+  // a forged cookie renders nothing useful.
   const hasToken = request.cookies.get("scanner-token")?.value;
 
   const isPublicPath = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
@@ -24,5 +27,10 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|icons|manifest.json).*)"],
+  // Exclude the BFF API routes (they handle their own auth — the login routes
+  // must be reachable while unauthenticated), Next internals, PWA assets, the
+  // service worker, and the manifest (served at /manifest.webmanifest).
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|icons|sw.js|manifest.webmanifest).*)",
+  ],
 };

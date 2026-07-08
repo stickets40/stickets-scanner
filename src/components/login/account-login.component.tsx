@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { User, Lock } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth.store";
-import type { LoginResponse } from "@/types/scanner.types";
+import { loginResultSchema } from "@/types/scanner.types";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
@@ -39,8 +39,9 @@ const AccountLoginComponent = () => {
         return;
       }
 
-      const result = await response.json<LoginResponse>();
-      login(result.data.accessToken, result.data.scanner);
+      // BFF returns only the profile; the token is set as an httpOnly cookie.
+      const { scanner } = loginResultSchema.parse(await response.json());
+      login(scanner, "account");
       router.push("/scan");
     } catch {
       setError("Connection error. Please try again.");

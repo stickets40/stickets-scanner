@@ -2,6 +2,7 @@
 
 import { ArrowLeft, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth.store";
 import Button from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
@@ -10,9 +11,16 @@ import ScanModeToggleComponent from "./scan-mode-toggle.component";
 const SettingsPanelComponent = () => {
   const router = useRouter();
   const scanner = useAuthStore((s) => s.scanner);
+  const accessMethod = useAuthStore((s) => s.accessMethod);
   const logout = useAuthStore((s) => s.logout);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Clear the httpOnly cookie server-side, then wipe local state.
+    try {
+      await api.post("auth/logout");
+    } catch {
+      /* best-effort — still clear locally */
+    }
     logout();
     router.push("/login");
   };
@@ -37,14 +45,15 @@ const SettingsPanelComponent = () => {
             Scanner Info
           </Text>
           <div className="space-y-2">
-            <InfoRow label="Name" value={scanner?.scannerName || "—"} />
-            <InfoRow label="Event" value={`#${scanner?.eventId || "—"}`} />
+            <InfoRow label="Name" value={scanner?.name || "—"} />
+            <InfoRow
+              label="Event"
+              value={scanner?.eventName || `#${scanner?.eventId || "—"}`}
+            />
             <InfoRow
               label="Access"
               value={
-                scanner?.accessMethod === "account"
-                  ? "Account Login"
-                  : "Access Code"
+                accessMethod === "account" ? "Account Login" : "Access Code"
               }
             />
             <InfoRow

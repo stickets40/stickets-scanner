@@ -17,7 +17,7 @@ const LoginTabsComponent = () => {
     <div className="flex min-h-dvh flex-col items-center justify-center bg-background-light px-6">
       <div className="w-full max-w-sm">
         {/* Login Card */}
-        <div className="rounded-3xl border-3 border-primary bg-white px-8 py-6 shadow-[0_4px_6px_rgba(0,0,0,0.04),0_10px_15px_rgba(0,0,0,0.03),0_20px_25px_rgba(0,0,0,0.03),0_2px_4px_rgba(255,69,0,0.06),0_0px_40px_rgba(255,69,0,0.04)]">
+        <div className="rounded-3xl border-2 border-primary bg-white px-8 py-6 shadow-[0_4px_6px_rgba(0,0,0,0.04),0_10px_15px_rgba(0,0,0,0.03),0_20px_25px_rgba(0,0,0,0.03),0_2px_4px_rgba(255,69,0,0.06),0_0px_40px_rgba(255,69,0,0.04)]">
           {/* Logo / Title - Horizontal layout */}
           <div className="mb-2 flex items-center justify-center gap-3">
             <Image

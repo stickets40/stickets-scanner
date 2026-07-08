@@ -24,8 +24,8 @@ const MODES: { value: ScanMode; label: string; description: string }[] = [
 ];
 
 const ScanModeToggleComponent = () => {
-  const scanMode = useAuthStore((s) => s.scanner?.scanMode);
-  const updateScanMode = useAuthStore((s) => s.updateScanMode);
+  const scanMode = useAuthStore((s) => s.scanMode);
+  const updateScanMode = useAuthStore((s) => s.setScanMode);
 
   return (
     <div className="space-y-3">

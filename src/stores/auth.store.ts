@@ -2,28 +2,34 @@
 
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
-import type { ScannerPayload } from "@/types/scanner.types";
+import {
+  DEFAULT_SCAN_MODE,
+  type AccessMethod,
+  type ScanMode,
+  type ScannerInfo,
+} from "@/types/scanner.types";
 
 interface AuthState {
-  token: string | null;
-  scanner: ScannerPayload | null;
-  accessCode: string | null;
-  isAuthenticated: boolean;
+  /** Non-sensitive scanner profile (from login), safe to persist for offline display. */
+  scanner: ScannerInfo | null;
+  /** Which login method was used (client-derived; the backend no longer sends it). */
+  accessMethod: AccessMethod | null;
+  /** Device-only preference; the backend dropped scan_mode entirely. */
+  scanMode: ScanMode;
 }
 
 interface AuthActions {
-  login: (token: string, scanner: ScannerPayload, accessCode?: string) => void;
+  login: (scanner: ScannerInfo, accessMethod: AccessMethod) => void;
   logout: () => void;
-  updateScanMode: (scanMode: ScannerPayload["scanMode"]) => void;
+  setScanMode: (scanMode: ScanMode) => void;
 }
 
 type AuthStore = AuthState & AuthActions;
 
 const initialState: AuthState = {
-  token: null,
   scanner: null,
-  accessCode: null,
-  isAuthenticated: false,
+  accessMethod: null,
+  scanMode: DEFAULT_SCAN_MODE,
 };
 
 export const useAuthStore = create<AuthStore>()(
@@ -31,26 +37,21 @@ export const useAuthStore = create<AuthStore>()(
     persist(
       (set) => ({
         ...initialState,
-
-        login: (token, scanner, accessCode) =>
-          set({
-            token,
-            scanner,
-            accessCode: accessCode ?? null,
-            isAuthenticated: true,
-          }),
-
-        logout: () => set(initialState),
-
-        updateScanMode: (scanMode) =>
-          set((state) => ({
-            scanner: state.scanner
-              ? { ...state.scanner, scanMode }
-              : null,
-          })),
+        login: (scanner, accessMethod) => set({ scanner, accessMethod }),
+        // Keep the device's scanMode preference across logout/login.
+        logout: () => set({ scanner: null, accessMethod: null }),
+        setScanMode: (scanMode) => set({ scanMode }),
       }),
       {
         name: "scanner-auth",
+        // SECURITY: the auth token is an httpOnly+Secure cookie set server-side by
+        // the BFF — it is NEVER stored here. We persist only the non-sensitive
+        // profile and device prefs. The reusable access code is never persisted.
+        partialize: (s) => ({
+          scanner: s.scanner,
+          accessMethod: s.accessMethod,
+          scanMode: s.scanMode,
+        }),
       }
     ),
     {

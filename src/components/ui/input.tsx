@@ -24,7 +24,7 @@ export const InputContainer: FC<InputContainerProps> = ({
   return (
     <div
       className={cn(
-        "flex gap-2.5 items-center h-10.5 px-4 w-full bg-white rounded-2xl border border-solid shadow-sm transition-colors",
+        "flex gap-2.5 items-center h-11 px-4 w-full bg-white rounded-2xl border border-solid shadow-sm transition-colors",
         "focus-within:border-primary",
         isError
           ? "border-danger focus-within:border-danger"
