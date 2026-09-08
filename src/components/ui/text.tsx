@@ -16,10 +16,11 @@ interface TextProps {
   variant?: TextVariant;
   size?: TextSizeKey;
   weight?: TextWeightKey;
-  color?: "primary" | "secondary" | "danger" | "white" | "default";
+  color?: "brand" | "muted" | "faint" | "danger" | "inherit" | "default";
   className?: string;
   children?: ReactNode;
   htmlFor?: string;
+  id?: string;
   style?: CSSProperties;
 }
 
@@ -29,8 +30,13 @@ type VariantDefaults = {
   as: ElementType;
 };
 
+/**
+ * Weights run one notch heavier than a light-theme scale would. Light text on
+ * a dark ground optically thins out, so 400 reads as 350 and small labels
+ * disappear at a glance — which is the only way this app is ever read.
+ */
 const variantDefaults: Record<TextVariant, VariantDefaults> = {
-  h1: { size: "4xl", weight: "semibold", as: "h1" },
+  h1: { size: "4xl", weight: "bold", as: "h1" },
   h2: { size: "3xl", weight: "semibold", as: "h2" },
   h3: { size: "2xl", weight: "semibold", as: "h3" },
   h4: { size: "xl", weight: "semibold", as: "h4" },
@@ -46,17 +52,18 @@ const variantDefaults: Record<TextVariant, VariantDefaults> = {
   p: { size: "base", weight: "normal", as: "p" },
   p2: { size: "sm", weight: "normal", as: "p" },
   p3: { size: "xs", weight: "normal", as: "p" },
-  p4: { size: "2xs", weight: "normal", as: "p" },
-  label: { size: "xs", weight: "bold", as: "label" },
-  label2: { size: "2xs", weight: "bold", as: "label" },
+  p4: { size: "2xs", weight: "medium", as: "p" },
+  label: { size: "xs", weight: "semibold", as: "label" },
+  label2: { size: "2xs", weight: "semibold", as: "label" },
 };
 
 const colorMap = {
-  primary: "text-primary",
-  secondary: "text-text-secondary",
+  brand: "text-brand-ink",
+  muted: "text-ink-muted",
+  faint: "text-ink-faint",
   danger: "text-danger",
-  white: "text-white",
-  default: "text-text-primary",
+  inherit: "text-inherit",
+  default: "text-ink",
 };
 
 export function Text({

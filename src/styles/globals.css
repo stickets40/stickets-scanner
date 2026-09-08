@@ -1,82 +1,121 @@
 @import "tailwindcss";
 
 /**
- * Design System Foundation - Global CSS Variables
+ * Stickets Scanner — design tokens.
  *
- * Aligned with stickets-frontend design system.
- * Values are defined in :root and then referenced in @theme to make them
- * available as Tailwind utility classes.
+ * DARK-FIRST AND UNCONDITIONAL. This app is used by door staff at a venue
+ * entrance, at night, with a live camera view filling the screen. A white
+ * surface here is a flashbulb that costs the operator their night vision, so
+ * there is deliberately no light theme and no user-facing toggle.
+ *
+ * Colour is authored in OKLCH. Neutrals are tinted ~0.01 chroma toward the
+ * brand hue (40) rather than toward generic "warm" — they should read as this
+ * product's greys, not as anyone's.
+ *
+ * Tailwind v4 is CSS-first: values live directly in @theme, which both defines
+ * the custom property and generates the utility (--color-surface-1 =>
+ * bg-surface-1, text-surface-1, border-surface-1, ...).
  */
 
-:root {
+@theme {
   /* ============================================
-     COLOR TOKENS
+     SURFACES
+     Three-step dark ramp. In dark UI depth comes from surface lightness,
+     not from shadow — shadows are nearly invisible on a dark ground.
      ============================================ */
-
-  /* Brand Colors */
-  --color-primary: #FF4500;
-  --color-primary-hover: #FF5500;
-
-  /* Text Colors */
-  --color-text-primary: #1B1B3C;
-  --color-text-secondary: #666666;
-
-  /* Background Colors */
-  --color-background: #ffffff;
-  --color-background-light: #F3F4F6;
-
-  /* Border Colors */
-  --color-border: #e6e6e6;
-
-  /* Utility Colors */
-  --color-white: #ffffff;
-  --color-danger: #DC2626;
-
-  /* Scanner-specific status colors */
-  --color-success: #22C55E;
-  --color-success-light: #DCFCE7;
-  --color-warning: #F59E0B;
-  --color-warning-light: #FEF3C7;
-  --color-error: #DC2626;
-  --color-error-light: #FEE2E2;
-  --color-info: #3B82F6;
-  --color-info-light: #DBEAFE;
-  --color-wrong: #F97316;
-  --color-wrong-light: #FFF7ED;
+  --color-surface-0: oklch(0.16 0.008 40); /* #100c0b — app background */
+  --color-surface-1: oklch(0.21 0.01 40); /* #1d1715 — cards, sheets, panels */
+  --color-surface-2: oklch(0.27 0.012 40); /* #2c2522 — inputs, raised, pressed */
+  --color-line: oklch(0.52 0.016 40); /* #726662 — 3.2:1 on surface-1 */
+  --color-line-soft: oklch(0.33 0.012 40); /* #3b3331 — dividers only */
 
   /* ============================================
-     SPACING TOKENS
+     INK
+     Body ink must clear 4.5:1 on surface-0/1; -faint is decorative only
+     and must never carry body copy.
      ============================================ */
-  --spacing-s-xs: 0.25rem;   /* 4px */
-  --spacing-s-sm: 0.5rem;    /* 8px */
-  --spacing-s-md: 1rem;      /* 16px */
-  --spacing-s-lg: 1.5rem;    /* 24px */
-  --spacing-s-xl: 2rem;      /* 32px */
-  --spacing-s-2xl: 3rem;     /* 48px */
-  --spacing-s-3xl: 4rem;     /* 64px */
+  --color-ink: oklch(0.97 0.004 40); /* 17.8:1 on surface-0 */
+  --color-ink-muted: oklch(0.78 0.01 40); /* 8.8:1 on surface-1 */
+  --color-ink-faint: oklch(0.62 0.01 40); /* 4.9:1 — decorative/icons */
 
   /* ============================================
-     BORDER RADIUS TOKENS
+     BRAND
+     --color-brand is #FF4500 preserved exactly (shared with stickets-frontend).
+     --color-brand-ink is the same hue lifted and slightly desaturated for use
+     as text or an icon on a dark ground, where full-chroma #FF4500 vibrates.
+     Brand is chrome only: it never appears on a verdict, so an operator can
+     never confuse "this app" with "this answer".
      ============================================ */
-  --radius-sm: 0.125rem;     /* 2px */
-  --radius-md: 0.375rem;     /* 6px */
-  --radius-lg: 0.5rem;       /* 8px */
-  --radius-xl: 0.75rem;      /* 12px */
-  --radius-full: 9999px;
+  --color-brand: oklch(0.6602 0.2294 35.4); /* exactly #FF4500 */
+  --color-brand-ink: oklch(0.74 0.14 35.4); /* #f5886c — 7.3:1 on surface-1 */
+  --color-brand-dim: oklch(0.4 0.12 35.4);
 
   /* ============================================
-     TYPOGRAPHY TOKENS
+     VERDICTS
+     Ordered by LIGHTNESS, not just hue, so the four states stay separable
+     under deuteranopia/protanopia/tritanopia and in full greyscale:
+     admit 0.84 > used 0.70 > wrong-gate 0.53 > invalid 0.40.
+     "admit" is the brightest thing the app can show and "invalid" the
+     darkest — the go/stop decision survives even total colour blindness.
+
+     These exact values are verified, not eyeballed. An earlier draft had
+     admit and used at 1.01:1 in greyscale — visually distinct in colour,
+     indistinguishable to a deuteranope, which is precisely the operator who
+     must not confuse "let them in" with "stop them".
+
+     wrong-gate is azure, NOT orange. It used to be orange, which collided
+     with brand AND rendered a red pill — showing a holder with a perfectly
+     valid ticket the colour of fraud. A wrong gate is a redirection, not a
+     rejection, and it now looks like one.
+
+     Colour never carries meaning alone: every verdict also has a distinct
+     word, icon, tone and haptic.
      ============================================ */
-  --font-size-3xs: 0.5rem;    /* 8px */
-  --font-size-2xs: 0.625rem;  /* 10px */
-  --font-size-xs: 0.75rem;    /* 12px */
-  --font-size-sm: 0.875rem;   /* 14px */
-  --font-size-base: 1rem;     /* 16px */
-  --font-size-lg: 1.125rem;   /* 18px */
-  --font-size-xl: 1.25rem;    /* 20px */
-  --font-size-2xl: 1.5rem;    /* 24px */
-  --font-size-3xl: 1.75rem;   /* 28px */
-  --font-size-4xl: 2rem;      /* 32px */
+  --color-admit: oklch(0.84 0.175 148); /* #6fe986 */
+  --color-admit-ink: oklch(0.2 0.055 148); /* 11.6:1 on admit */
+
+  --color-used: oklch(0.7 0.145 75); /* #d28f0e */
+  --color-used-ink: oklch(0.19 0.05 75); /* 6.8:1 on used */
+
+  --color-wrong-gate: oklch(0.53 0.13 245); /* #0a71b1 */
+  --color-wrong-gate-ink: oklch(0.97 0.01 245); /* 5.1:1 on wrong-gate */
+
+  --color-invalid: oklch(0.4 0.165 27); /* #8b0009 */
+  --color-invalid-ink: oklch(0.97 0.012 27); /* 9.1:1 on invalid */
+
+  /* Pending is NOT a verdict. Offline/queued/error states use the neutral
+     surface ramp so a network problem can never be read as a rejected
+     ticket — staff would turn away legitimate holders. */
+  --color-pending: oklch(0.27 0.012 40);
+  --color-pending-ink: oklch(0.97 0.004 40);
+
+  /* Destructive actions (sign out). Distinct from --color-invalid so a
+     verdict and a UI action never share a colour. */
+  --color-danger: oklch(0.68 0.185 25); /* #f5605b — 5.7:1 on surface-1 */
+
+  /* ============================================
+     TYPOGRAPHY
+     Fixed rem scale at ~1.2 ratio. Product UI, so no fluid clamp() — users
+     view at a consistent distance and a heading that shrinks in a sheet
+     looks worse, not better.
+     ============================================ */
+  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo,
+    monospace;
+
+  --font-size-2xs: 0.6875rem; /* 11px — floor; labels only, never body */
+  --font-size-xs: 0.75rem; /* 12px */
+  --font-size-sm: 0.875rem; /* 14px */
+  --font-size-base: 1rem; /* 16px — also stops iOS zoom-on-focus */
+  --font-size-lg: 1.125rem; /* 18px */
+  --font-size-xl: 1.375rem; /* 22px */
+  --font-size-2xl: 1.625rem; /* 26px */
+  --font-size-3xl: 2rem; /* 32px */
+  --font-size-4xl: 2.5rem; /* 40px */
+  /* The verdict word, and the only large type in the app. Read at arm's
+     length, at an angle, in the dark. */
+  --font-size-verdict: 4.5rem; /* 72px */
 
   --font-weight-normal: 400;
   --font-weight-medium: 500;
@@ -84,121 +123,171 @@
   --font-weight-bold: 700;
 
   /* ============================================
-     SHADOW TOKENS
+     RADIUS
      ============================================ */
-  --drop-shadow-peel: 0 0 20px rgba(255, 69, 0, 0.25);
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --radius-full: 9999px;
 
   /* ============================================
-     TRANSITION TOKENS
+     MOTION
+     150-250ms for state changes; the verdict flood is faster still because
+     it is feedback, not choreography. Exponential ease-out only — no bounce,
+     no elastic.
      ============================================ */
-  --ease-peel: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --animate-verdict-flood: verdict-flood 120ms
+    cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-verdict-content: verdict-content 220ms
+    cubic-bezier(0.25, 1, 0.5, 1) both;
+  --animate-sheet-up: sheet-up 240ms cubic-bezier(0.25, 1, 0.5, 1) both;
+  --animate-fade-in: fade-in 160ms cubic-bezier(0.25, 1, 0.5, 1) both;
+  --animate-pulse-soft: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+  /* ============================================
+     Z-INDEX
+     Semantic scale. No arbitrary 999s.
+     ============================================ */
+  --z-base: 0;
+  --z-chrome: 10;
+  --z-overlay: 20;
+  --z-sheet: 30;
+  --z-verdict: 40;
 }
 
 /* ============================================
-   ANIMATIONS
+   KEYFRAMES
+   The result card previously used `animate-in slide-in-from-bottom-4`, which
+   compiled to nothing — tailwindcss-animate was never installed, so the app's
+   single most important moment appeared with no transition at all. These are
+   real, dependency-free replacements.
    ============================================ */
-@keyframes peel-pulse {
-  0%, 100% { filter: drop-shadow(0 0 20px rgba(255, 69, 0, 0.25)); }
-  50% { filter: drop-shadow(0 0 25px rgba(255, 69, 0, 0.5)); }
+@keyframes verdict-flood {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
-@keyframes bounce-custom {
-  0%, 100% {
-    transform: translateY(0);
-    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+@keyframes verdict-content {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
   }
   50% {
-    transform: translateY(-25%);
-    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+    opacity: 0.45;
   }
 }
 
-@theme {
-  /* Color Tokens */
-  --color-primary: var(--color-primary);
-  --color-primary-hover: var(--color-primary-hover);
-  --color-text-primary: var(--color-text-primary);
-  --color-text-secondary: var(--color-text-secondary);
-  --color-background: var(--color-background);
-  --color-background-light: var(--color-background-light);
-  --color-border: var(--color-border);
-  --color-danger: var(--color-danger);
-  --color-success: var(--color-success);
-  --color-success-light: var(--color-success-light);
-  --color-warning: var(--color-warning);
-  --color-warning-light: var(--color-warning-light);
-  --color-error: var(--color-error);
-  --color-error-light: var(--color-error-light);
-  --color-info: var(--color-info);
-  --color-info-light: var(--color-info-light);
-  --color-wrong: var(--color-wrong);
-  --color-wrong-light: var(--color-wrong-light);
+/*
+ * The reset MUST live inside @layer base.
+ *
+ * Tailwind v4 puts its utilities in `@layer utilities`, and unlayered CSS
+ * beats every layer in the cascade regardless of specificity or source order.
+ * So an unlayered `* { padding: 0 }` silently overrode every single padding
+ * utility in the app — `px-5`, `p-4`, `py-3` all computed to 0px while still
+ * appearing in the class list. It looked like a layout bug and was actually a
+ * cascade bug. Layering the reset makes utilities win again, as intended.
+ */
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
 
-  /* Spacing Tokens */
-  --spacing-s-xs: var(--spacing-s-xs);
-  --spacing-s-sm: var(--spacing-s-sm);
-  --spacing-s-md: var(--spacing-s-md);
-  --spacing-s-lg: var(--spacing-s-lg);
-  --spacing-s-xl: var(--spacing-s-xl);
-  --spacing-s-2xl: var(--spacing-s-2xl);
-  --spacing-s-3xl: var(--spacing-s-3xl);
+  html {
+    /* Dark UA form controls, scrollbars and autofill. Without this the browser
+       paints white chrome into a black app. */
+    color-scheme: dark;
+  }
 
-  /* Border Radius Tokens */
-  --radius-sm: var(--radius-sm);
-  --radius-md: var(--radius-md);
-  --radius-lg: var(--radius-lg);
-  --radius-xl: var(--radius-xl);
-  --radius-full: var(--radius-full);
+  body {
+    font-family: var(--font-sans);
+    color: var(--color-ink);
+    background-color: var(--color-surface-0);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior: none;
 
-  /* Typography Tokens */
-  --font-size-xs: var(--font-size-xs);
-  --font-size-sm: var(--font-size-sm);
-  --font-size-base: var(--font-size-base);
-  --font-size-lg: var(--font-size-lg);
-  --font-size-xl: var(--font-size-xl);
-
-  /* Shadow Tokens */
-  --drop-shadow-peel: var(--drop-shadow-peel);
-
-  /* Transition Tokens */
-  --ease-peel: var(--ease-peel);
-
-  /* Animation Tokens */
-  --animate-peel-pulse: peel-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  --animate-bounce-custom: bounce-custom 1s infinite;
+    /* Light-on-dark compensation: at the same nominal weight, light text on a
+       dark ground blooms and reads heavier and tighter than it measures. Open
+       the tracking and leading slightly to pay it back. */
+    letter-spacing: 0.01em;
+    line-height: 1.55;
+  }
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* Tabular figures wherever numbers are compared or counted — times, tallies,
+   ticket IDs. Stops digits jittering as a counter increments. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
 }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
-  color: var(--color-text-primary);
-  background-color: var(--color-background);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  overscroll-behavior: none;
+/* Text selection is suppressed on the scanner surface only, where a stray
+   long-press during a scan is pure noise. It is deliberately NOT global:
+   operators need to select and copy holder names and error messages. */
+.no-select {
   user-select: none;
   -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
-/* PWA standalone mode adjustments */
-@media all and (display-mode: standalone) {
-  body {
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
+/*
+ * NOTE: there is intentionally no `@media (display-mode: standalone)` body
+ * padding here. `viewportFit: "cover"` already makes 100dvh span the full
+ * screen including the safe areas, so padding the body on top of that made
+ * every route ~85px taller than the viewport and the whole app scrolled under
+ * the operator's thumb. Safe-area insets are applied per-element instead, on
+ * the specific chrome that needs to clear the notch or home indicator.
+ */
+
+/* Reduced motion: keep the state change instant and legible, drop the travel.
+   The verdict must still be unmistakable — this removes motion, not feedback. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
-}
-
-/* Hide scrollbar for scanner view */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
 }

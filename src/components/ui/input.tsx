@@ -1,6 +1,6 @@
 import { cn } from "@/lib/cn";
 import type { InputHTMLAttributes, ReactNode, FC } from "react";
-import { forwardRef } from "react";
+import { forwardRef, useId } from "react";
 
 // ─── InputContainer ──────────────────────────────────────────
 
@@ -24,23 +24,26 @@ export const InputContainer: FC<InputContainerProps> = ({
   return (
     <div
       className={cn(
-        "flex gap-2.5 items-center h-11 px-4 w-full bg-white rounded-2xl border border-solid shadow-sm transition-colors",
-        "focus-within:border-primary",
+        "flex w-full items-center gap-2.5 rounded-2xl border border-solid px-4 transition-colors",
+        // 52px: comfortably past the 44px floor, and the field an operator
+        // types an access code into with cold hands.
+        "min-h-[3.25rem] bg-surface-2",
+        "focus-within:ring-2 focus-within:ring-brand-ink/60",
         isError
           ? "border-danger focus-within:border-danger"
-          : "border-border",
-        isDisabled && "bg-gray-100 opacity-60 cursor-not-allowed",
+          : "border-line focus-within:border-brand-ink",
+        isDisabled && "cursor-not-allowed opacity-50",
         className
       )}
     >
       {startContent && (
-        <div className="text-base text-text-secondary shrink-0 flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2 text-ink-faint">
           {startContent}
         </div>
       )}
-      <div className="flex-1 min-w-0 flex items-center">{children}</div>
+      <div className="flex min-w-0 flex-1 items-center">{children}</div>
       {endContent && (
-        <div className="shrink-0 flex items-center">{endContent}</div>
+        <div className="flex shrink-0 items-center">{endContent}</div>
       )}
     </div>
   );
@@ -68,14 +71,22 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       className,
       containerClassName,
       disabled,
+      id,
       ...props
     },
     ref
   ) => {
+    const generatedId = useId();
+    const inputId = id ?? generatedId;
+    const messageId = `${inputId}-message`;
+
     return (
-      <div className="flex flex-col gap-1 w-full">
+      <div className="flex w-full flex-col gap-1.5">
         {label && (
-          <label className="text-sm font-medium text-text-primary">
+          <label
+            htmlFor={inputId}
+            className="text-sm font-medium text-ink-muted"
+          >
             {label}
           </label>
         )}
@@ -89,22 +100,30 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         >
           <input
             ref={ref}
+            id={inputId}
             className={cn(
-              "w-full border-none bg-transparent text-base text-text-primary placeholder:text-text-secondary/50 focus:outline-none min-w-0",
+              // text-base (16px) is load-bearing: anything smaller makes iOS
+              // Safari zoom the viewport on focus.
+              "w-full min-w-0 border-none bg-transparent text-base text-ink",
+              "placeholder:text-ink-faint focus:outline-none",
               className
             )}
             disabled={disabled}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error || helperText ? messageId : undefined}
             {...props}
           />
         </InputContainer>
 
         {(error || helperText) && (
-          <div className="flex items-center px-2">
+          <div
+            id={messageId}
+            // Errors must be announced, not just painted.
+            role={error ? "alert" : undefined}
+            className="flex items-center px-1"
+          >
             <span
-              className={cn(
-                "text-xs",
-                error ? "text-danger" : "text-text-secondary"
-              )}
+              className={cn("text-xs", error ? "text-danger" : "text-ink-muted")}
             >
               {error || helperText}
             </span>

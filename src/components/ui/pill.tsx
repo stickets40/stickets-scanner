@@ -6,100 +6,81 @@ import { cn } from "@/lib/cn";
 interface BasePillProps {
   children: ReactNode;
   className?: string;
-  backgroundColor?: string;
-  textColor?: string;
-  borderColor?: string;
-  size?: "xs" | "sm" | "md" | "lg";
-  style?: React.CSSProperties;
+  size?: "xs" | "sm" | "md";
 }
 
 const sizeClasses = {
-  xs: "px-1.5 py-0.5 text-[10px] font-normal",
-  sm: "px-2 py-1 text-xs",
-  md: "px-3 py-2 text-sm",
-  lg: "px-4 py-3 text-base",
+  xs: "px-2 py-0.5 text-[0.6875rem]",
+  sm: "px-2.5 py-1 text-xs",
+  md: "px-3 py-1.5 text-sm",
 };
 
 export function BasePill({
   children,
   className = "",
-  backgroundColor,
-  textColor,
-  borderColor,
-  size = "md",
-  style = {},
+  size = "sm",
 }: BasePillProps) {
   return (
-    <div
+    <span
       className={cn(
-        "inline-flex items-center justify-center font-medium rounded-full",
+        "inline-flex items-center justify-center gap-1.5 rounded-full font-semibold",
         sizeClasses[size],
         className
       )}
-      style={{
-        backgroundColor,
-        color: textColor,
-        borderColor,
-        ...style,
-      }}
     >
       {children}
-    </div>
+    </span>
   );
 }
 
 // ─── TagPill ─────────────────────────────────────────────────
 
-type TagVariant =
-  | "default"
-  | "success"
-  | "warning"
-  | "error"
-  | "info"
-  | "primary"
-  | "secondary";
+/**
+ * Variants map 1:1 onto the verdict tokens in globals.css. They deliberately
+ * do NOT carry their own colour values — the previous version hardcoded a
+ * separate Material palette, so a pill and the icon beside it could render two
+ * different greens for the same state, and `wrong_scanner` rendered a red pill
+ * inside an orange card.
+ */
+type TagVariant = "admit" | "used" | "wrong-gate" | "invalid" | "pending";
 
 interface TagPillProps {
   tag: string;
   variant?: TagVariant;
-  size?: "xs" | "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md";
   showDot?: boolean;
   className?: string;
 }
 
-const variantColors: Record<
-  TagVariant,
-  { bg: string; text: string; dot: string }
-> = {
-  default: { bg: "rgba(245, 245, 245, 0.125)", text: "#424242", dot: "#9E9E9E" },
-  primary: { bg: "rgba(25, 118, 210, 0.125)", text: "#1976D2", dot: "#1976D2" },
-  secondary: { bg: "rgba(123, 31, 162, 0.125)", text: "#7B1FA2", dot: "#7B1FA2" },
-  success: { bg: "#E8F5E8", text: "#2E7D32", dot: "#4CAF50" },
-  warning: { bg: "#FFF3E0", text: "#F57C00", dot: "#FF9800" },
-  error: { bg: "#FEE2E2", text: "#D32F2F", dot: "#F44336" },
-  info: { bg: "#DBEAFE", text: "#1565C0", dot: "#1976D2" },
+const variantClasses: Record<TagVariant, string> = {
+  admit: "bg-admit/15 text-admit",
+  used: "bg-used/15 text-used",
+  "wrong-gate": "bg-wrong-gate/20 text-wrong-gate",
+  invalid: "bg-invalid/20 text-invalid",
+  pending: "bg-surface-2 text-ink-muted",
+};
+
+const dotClasses: Record<TagVariant, string> = {
+  admit: "bg-admit",
+  used: "bg-used",
+  "wrong-gate": "bg-wrong-gate",
+  invalid: "bg-invalid",
+  pending: "bg-ink-faint",
 };
 
 export function TagPill({
   tag,
-  variant = "default",
+  variant = "pending",
   size = "sm",
   showDot = false,
   className = "",
 }: TagPillProps) {
-  const colors = variantColors[variant];
-
   return (
-    <BasePill
-      backgroundColor={colors.bg}
-      textColor={colors.text}
-      size={size}
-      className={className}
-    >
+    <BasePill size={size} className={cn(variantClasses[variant], className)}>
       {showDot && (
-        <div
-          className="w-2 h-2 rounded-full mr-2"
-          style={{ backgroundColor: colors.dot }}
+        <span
+          className={cn("h-1.5 w-1.5 shrink-0 rounded-full", dotClasses[variant])}
+          aria-hidden="true"
         />
       )}
       <span>{tag}</span>

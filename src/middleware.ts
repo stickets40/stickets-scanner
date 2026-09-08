@@ -1,36 +1,38 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_PATHS = ["/login"];
+const TOKEN_COOKIE = "scanner-token";
+const HINT_COOKIE = "scanner-session-hint";
 
+/**
+ * Shell gating only — every real call is re-authorised by the backend.
+ *
+ * A device whose token EXPIRED mid-shift must still be able to open the
+ * (cached) scanner shell: it may be offline with a queue to protect, and the
+ * inline re-auth sheet lives inside the shell. So the presence of EITHER the
+ * token or the long-lived hint cookie lets a protected path through; only a
+ * device that has never signed in is sent to /login. The login page bounces
+ * to /scan only while a real token exists.
+ */
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-
-  // Presence check on the httpOnly token cookie set by the BFF on login. This
-  // only gates which SHELL renders — every real scan is re-authorized server-side
-  // by the backend (HS256 pin + type:'scanner' claim + live is_active check), so
-  // a forged cookie renders nothing useful.
-  const hasToken = request.cookies.get("scanner-token")?.value;
-
+  const hasToken = !!request.cookies.get(TOKEN_COOKIE)?.value;
+  const hasHint = !!request.cookies.get(HINT_COOKIE)?.value;
   const isPublicPath = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
 
-  // No token + protected path → redirect to login
-  if (!hasToken && !isPublicPath) {
+  if (!hasToken && !hasHint && !isPublicPath) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
-
-  // Has token + login page → redirect to scan
   if (hasToken && pathname === "/login") {
     return NextResponse.redirect(new URL("/scan", request.url));
   }
-
   return NextResponse.next();
 }
 
 export const config = {
-  // Exclude the BFF API routes (they handle their own auth — the login routes
-  // must be reachable while unauthenticated), Next internals, PWA assets, the
-  // service worker, and the manifest (served at /manifest.webmanifest).
+  // Exclude the BFF API routes (they handle their own auth), Next internals,
+  // PWA assets, the service worker, the manifest and the monitoring tunnel.
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|icons|sw.js|manifest.webmanifest).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|icons|zxing|sw.js|manifest.webmanifest|monitoring).*)",
   ],
 };

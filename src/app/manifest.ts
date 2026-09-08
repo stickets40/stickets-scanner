@@ -8,8 +8,12 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/scan",
     display: "standalone",
     orientation: "portrait",
-    background_color: "#ffffff",
-    theme_color: "#1B1B3C",
+    // Both match --color-surface-0. background_color paints the launch splash;
+    // it was white, so installing the app and opening it flashed a white
+    // screen before the black camera view — at a night gate, in the operator's
+    // face, every single launch.
+    background_color: "#100c0b",
+    theme_color: "#100c0b",
     icons: [
       {
         src: "/icons/icon-192x192.png",

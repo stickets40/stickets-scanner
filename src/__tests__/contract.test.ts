@@ -1,117 +1,74 @@
-import { describe, it, expect } from "vitest";
-import {
-  parseScanServerResult,
-  scannerInfoSchema,
-  loginResultSchema,
-} from "@/types/scanner.types";
+import { describe, expect, it } from "vitest";
+import { batchResponseSchema, manifestPageSchema, parseServerVerdict } from "@/types/verdict.types";
+import { loginResultSchema, scannerInfoSchema } from "@/types/scanner.types";
+import { makePage } from "./helpers/qr";
 
-/**
- * Contract tests — parse representative REAL backend payloads through the zod
- * schemas. These would have caught the drift (flat vs nested, firstUsedAt vs
- * firstScannedAt, name vs scannerName) that broke every scan card. The old flat
- * shapes are asserted to FAIL, proving the runtime guard rejects drift.
- */
-describe("scan result contract", () => {
-  it("parses a real success payload (nested ticket.*)", () => {
-    const r = parseScanServerResult({
-      result: "success",
-      ticket: {
-        ownerName: "Alice",
-        ticketTypeName: "General Admission",
-        nftId: "42",
-        tokenId: "42",
-        seatInfo: null,
-      },
-    });
-    expect(r.result).toBe("success");
-    if (r.result === "success") {
-      expect(r.ticket.ownerName).toBe("Alice");
-      expect(r.ticket.seatInfo).toBeNull();
-    }
-  });
+const base = { serverTime: "2026-09-05T18:00:00.000Z" };
 
-  it("parses already_used with seatInfo + firstUsedAt", () => {
-    const r = parseScanServerResult({
-      result: "already_used",
-      ticket: {
-        ownerName: "Bob",
-        seatInfo: { section: 3 },
-        firstUsedAt: "2026-07-08T10:00:00.000Z",
-      },
-    });
-    expect(r.result).toBe("already_used");
-    if (r.result === "already_used") {
-      expect(r.ticket.firstUsedAt).toContain("2026");
-      expect(r.ticket.seatInfo?.section).toBe(3);
-    }
-  });
-
-  it("parses wrong_scanner with correctScannerName + message", () => {
-    const r = parseScanServerResult({
-      result: "wrong_scanner",
-      correctScannerName: "Gate B",
-      message: "Ticket is valid but assigned to a different entrance",
-    });
-    expect(r.result).toBe("wrong_scanner");
-    if (r.result === "wrong_scanner") expect(r.correctScannerName).toBe("Gate B");
-  });
-
-  it("parses invalid with message", () => {
-    const r = parseScanServerResult({ result: "invalid", message: "Ticket not found" });
-    expect(r.result).toBe("invalid");
-    if (r.result === "invalid") expect(r.message).toBe("Ticket not found");
-  });
-
-  it("REJECTS the old flat success shape (drift guard)", () => {
-    expect(() =>
-      parseScanServerResult({
+describe("server verdict contract (Phase 2 union)", () => {
+  it("parses every kind", () => {
+    expect(
+      parseServerVerdict({
         result: "success",
-        ownerName: "Alice",
-        ticketTypeName: "GA",
-        section: 1,
+        scanLogId: "log-1",
+        undoableUntil: "2026-09-05T18:05:00.000Z",
+        ticket: { ownerName: "Alice", ticketTypeName: "GA", ticketTypeId: 1, nftId: "t", tokenId: "t", seatInfo: null },
+        ...base,
+      }).result
+    ).toBe("success");
+    expect(
+      parseServerVerdict({
+        result: "already_used",
+        ticket: { ownerName: "Bob", seatInfo: { section: 3 }, firstUsedAt: "2026-09-05T17:00:00.000Z", tokenId: "t" },
+        firstScannedBy: { scannerId: "s2", scannerName: "Gate B", deviceId: "d9" },
+        secondsAgo: 40,
+        sameDevice: false,
+        replayed: true,
+        ...base,
       })
-    ).toThrow();
+    ).toMatchObject({ result: "already_used", replayed: true });
+    expect(
+      parseServerVerdict({ result: "wrong_scanner", correctScannerName: "Gate B", correctScannerNames: ["Gate B", "Gate C"], message: "m", ticketTypeId: 2, ...base }).result
+    ).toBe("wrong_scanner");
+    expect(parseServerVerdict({ result: "invalid", code: "STALE_QR", message: "m", ...base }).result).toBe("invalid");
+    expect(
+      parseServerVerdict({ result: "outside_window", reason: "too_early", opensAt: base.serverTime, closesAt: base.serverTime, ...base }).result
+    ).toBe("outside_window");
   });
 
-  it("REJECTS an unknown result kind", () => {
-    expect(() => parseScanServerResult({ result: "maybe" })).toThrow();
+  it("rejects an unknown result kind and the old flat shape", () => {
+    expect(() => parseServerVerdict({ result: "maybe", ...base })).toThrow();
+    expect(() => parseServerVerdict({ result: "success", ownerName: "Alice", ...base })).toThrow();
+    expect(() => parseServerVerdict({ result: "success", ticket: {}, ...base })).toThrow();
+  });
+
+  it("batch results echo scanId and allow per-item errors", () => {
+    const parsed = batchResponseSchema.parse({
+      results: [
+        { scanId: "a", verdict: { result: "invalid", code: "NOT_A_TICKET", message: "m", ...base } },
+        { scanId: "b", error: { code: "SCAN_ERROR", message: "db" } },
+      ],
+      ...base,
+    });
+    expect(parsed.results).toHaveLength(2);
+  });
+
+  it("manifest page shape (22-char hashes)", () => {
+    expect(() => manifestPageSchema.parse(makePage({ pubB64: "k", tickets: [{ h: "short", tt: 1, v: 1, s: "valid", n: "x" }] }))).toThrow();
+    expect(manifestPageSchema.parse(makePage({ pubB64: "k" })).qrFormat).toBe("ST3");
   });
 });
 
 describe("login contract", () => {
-  it("parses the backend scanner profile (name/eventName)", () => {
-    const scanner = scannerInfoSchema.parse({
-      scannerId: "s1",
-      name: "Gate A",
-      eventId: "1",
-      eventName: "Summer Fest",
-      allowedTicketTypeIds: [1, 2],
-    });
-    expect(scanner.name).toBe("Gate A");
-    expect(scanner.eventName).toBe("Summer Fest");
-  });
-
-  it("parses the BFF login result envelope { scanner }", () => {
+  it("parses the BFF login result with expiry + device", () => {
     const res = loginResultSchema.parse({
-      scanner: {
-        scannerId: "s1",
-        name: "Gate A",
-        eventId: "1",
-        eventName: "Summer Fest",
-        allowedTicketTypeIds: [],
-      },
+      scanner: { scannerId: "s1", name: "Gate A", eventId: "1", eventName: "Summer Fest", allowedTicketTypeIds: [] },
+      expiresAt: "2026-09-06T18:00:00.000Z",
+      deviceId: "dev-1",
     });
     expect(res.scanner.scannerId).toBe("s1");
   });
-
   it("REJECTS the old scannerName-based shape", () => {
-    expect(() =>
-      scannerInfoSchema.parse({
-        scannerId: "s1",
-        scannerName: "Gate A",
-        eventId: "1",
-        allowedTicketTypeIds: [],
-      })
-    ).toThrow();
+    expect(() => scannerInfoSchema.parse({ scannerId: "s1", scannerName: "Gate A", eventId: "1", allowedTicketTypeIds: [] })).toThrow();
   });
 });

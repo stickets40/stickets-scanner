@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import Image from "next/image";
+import { ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Text } from "@/components/ui/text";
-import { ShieldCheck } from "lucide-react";
 import AccountLoginComponent from "./account-login.component";
 import AccessCodeLoginComponent from "./access-code-login.component";
 
@@ -12,70 +12,122 @@ type LoginTab = "account" | "access_code";
 
 const LoginTabsComponent = () => {
   const [activeTab, setActiveTab] = useState<LoginTab>("access_code");
+  const baseId = useId();
+
+  const tabId = (t: LoginTab) => `${baseId}-tab-${t}`;
+  const panelId = (t: LoginTab) => `${baseId}-panel-${t}`;
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-background-light px-6">
-      <div className="w-full max-w-sm">
-        {/* Login Card */}
-        <div className="rounded-3xl border-2 border-primary bg-white px-8 py-6 shadow-[0_4px_6px_rgba(0,0,0,0.04),0_10px_15px_rgba(0,0,0,0.03),0_20px_25px_rgba(0,0,0,0.03),0_2px_4px_rgba(255,69,0,0.06),0_0px_40px_rgba(255,69,0,0.04)]">
-          {/* Logo / Title - Horizontal layout */}
-          <div className="mb-2 flex items-center justify-center gap-3">
-            <Image
-              src="/icons/logo.png"
-              alt="Stickets"
-              width={36}
-              height={36}
-            />
-            <Text variant="h3">Scanner Login</Text>
-          </div>
-          <Text variant="p3" color="secondary" className="mb-6 text-center">
-            Access your assigned event scanner
-          </Text>
-
-          {/* Tab Switcher - Pill Style */}
-          <div className="mb-6 flex items-center justify-center gap-2">
-            <button
-              onClick={() => setActiveTab("account")}
-              className={cn(
-                "rounded-full px-5 py-2 text-sm font-medium transition-all duration-200",
-                activeTab === "account"
-                  ? "bg-primary text-white shadow-sm"
-                  : "border border-border bg-white text-text-primary hover:bg-background-light"
-              )}
-            >
-              Account Login
-            </button>
-            <button
-              onClick={() => setActiveTab("access_code")}
-              className={cn(
-                "rounded-full px-5 py-2 text-sm font-medium transition-all duration-200",
-                activeTab === "access_code"
-                  ? "bg-primary text-white shadow-sm"
-                  : "border border-border bg-white text-text-primary hover:bg-background-light"
-              )}
-            >
-              Access Code
-            </button>
-          </div>
-
-          {/* Forms */}
-          {activeTab === "account" ? (
-            <AccountLoginComponent />
-          ) : (
-            <AccessCodeLoginComponent />
-          )}
-
-          {/* Footer note */}
-          <div className="mt-5 flex items-center justify-center gap-1.5">
-            <ShieldCheck className="h-3.5 w-3.5 text-text-secondary" />
-            <Text variant="p4" color="secondary">
-              All scans are securely validated in real time.
+    <main
+      className="flex min-h-dvh flex-col justify-center bg-surface-0 px-5"
+      style={{
+        paddingTop: "calc(env(safe-area-inset-top) + 2rem)",
+        paddingBottom: "calc(env(safe-area-inset-bottom) + 2rem)",
+      }}
+    >
+      <div className="mx-auto w-full max-w-sm">
+        <div className="mb-8 flex flex-col items-center gap-3 text-center">
+          <Image
+            src="/icons/logo.png"
+            alt=""
+            width={44}
+            height={44}
+            style={{ height: "auto" }}
+            priority
+          />
+          <div>
+            <h1 className="text-2xl font-semibold text-ink">Scanner</h1>
+            <Text variant="p3" color="muted" className="mt-1">
+              Sign in to your assigned entrance
             </Text>
           </div>
         </div>
+
+        {/* Surface panel rather than a bordered card with a five-layer glow.
+            On a dark ground, depth comes from surface lightness — a heavy
+            shadow is invisible and the border was pure decoration. */}
+        <div className="rounded-2xl border border-line bg-surface-1 p-5">
+          <div
+            role="tablist"
+            aria-label="Sign-in method"
+            className="mb-5 grid grid-cols-2 gap-1 rounded-2xl bg-surface-2 p-1"
+          >
+            <TabButton
+              id={tabId("access_code")}
+              controls={panelId("access_code")}
+              selected={activeTab === "access_code"}
+              onSelect={() => setActiveTab("access_code")}
+            >
+              Access code
+            </TabButton>
+            <TabButton
+              id={tabId("account")}
+              controls={panelId("account")}
+              selected={activeTab === "account"}
+              onSelect={() => setActiveTab("account")}
+            >
+              Account
+            </TabButton>
+          </div>
+
+          <div
+            role="tabpanel"
+            id={panelId(activeTab)}
+            aria-labelledby={tabId(activeTab)}
+          >
+            {activeTab === "account" ? (
+              <AccountLoginComponent />
+            ) : (
+              <AccessCodeLoginComponent />
+            )}
+          </div>
+        </div>
+
+        <div className="mt-5 flex items-center justify-center gap-2">
+          <ShieldCheck className="h-4 w-4 text-ink-faint" aria-hidden="true" />
+          {/* Was 10px. Nothing in this app goes below 11px. */}
+          <Text variant="p4" color="muted">
+            Every scan is validated in real time.
+          </Text>
+        </div>
       </div>
-    </div>
+    </main>
   );
 };
+
+function TabButton({
+  id,
+  controls,
+  selected,
+  onSelect,
+  children,
+}: {
+  id: string;
+  controls: string;
+  selected: boolean;
+  onSelect: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      id={id}
+      aria-selected={selected}
+      aria-controls={controls}
+      tabIndex={selected ? 0 : -1}
+      onClick={onSelect}
+      className={cn(
+        "min-h-11 rounded-xl px-4 text-sm font-semibold transition-colors",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-ink",
+        selected
+          ? "bg-brand text-white"
+          : "bg-transparent text-ink-muted active:bg-line-soft"
+      )}
+    >
+      {children}
+    </button>
+  );
+}
 
 export default LoginTabsComponent;

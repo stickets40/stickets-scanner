@@ -8,7 +8,8 @@ const isProd = process.env.NODE_ENV === "production";
 // only needs 'self'. Dev adds 'unsafe-eval' + ws: for Turbopack/HMR.
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"}`,
+  // 'wasm-unsafe-eval': the self-hosted ZXing decoder is WebAssembly.
+  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isProd ? "" : " 'unsafe-eval'"}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
@@ -41,8 +42,17 @@ const securityHeaders = [
     : []),
 ];
 
+// One id per deploy: names the service-worker cache, shows in diagnostics,
+// and lets a device tell "my shell is from an older deploy" apart from a bug.
+const buildId =
+  process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 12) ??
+  process.env.SCANNER_BUILD_ID ??
+  `local-${Date.now().toString(36)}`;
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  generateBuildId: () => buildId,
+  env: { NEXT_PUBLIC_BUILD_ID: buildId },
   // Strip console.* (except warn/error) from production bundles.
   compiler: isProd ? { removeConsole: { exclude: ["error", "warn"] } } : {},
   async headers() {
