@@ -15,6 +15,33 @@ import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
 
 const CODE_LENGTH = 8;
+const SEPARATOR_AT = 4;
+
+/** Strip everything that is not part of a code, cap it, upper-case it. */
+const normalise = (raw: string): string =>
+  raw.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, CODE_LENGTH);
+
+/** "12345678" -> "1234-5678". The dash is presentation only. */
+const format = (clean: string): string =>
+  clean.length > SEPARATOR_AT
+    ? `${clean.slice(0, SEPARATOR_AT)}-${clean.slice(SEPARATOR_AT)}`
+    : clean;
+
+/**
+ * Where the caret belongs after re-formatting: after the same number of CODE
+ * characters it had in front of it before, ignoring the dash entirely. Without
+ * this, editing anywhere but the end throws the caret to the end on every
+ * keystroke.
+ */
+const caretAfterFormat = (formatted: string, codeCharsBefore: number): number => {
+  if (codeCharsBefore <= 0) return 0;
+  let seen = 0;
+  for (let i = 0; i < formatted.length; i++) {
+    if (formatted[i] !== "-") seen++;
+    if (seen === codeCharsBefore) return i + 1;
+  }
+  return formatted.length;
+};
 
 interface Props {
   /** Called instead of navigating to /scan (inline re-auth). */
@@ -25,13 +52,50 @@ interface Props {
 const AccessCodeLoginComponent = ({ onSuccess, compact }: Props) => {
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
+  /** The canonical 8 characters, with no dash. The field renders `format(code)`. */
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const formatCode = (raw: string): string => {
-    const clean = raw.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, CODE_LENGTH);
-    return clean.length > 4 ? `${clean.slice(0, 4)}-${clean.slice(4)}` : clean;
+  /**
+   * A MASK, not a formatter. The bug this fixes is CARET LOSS, not a bad format.
+   *
+   * The previous version stored the formatted string and returned it unchanged for
+   * any keystroke the mask rejects — a "-", a space, a punctuation mark. React then
+   * saw no state change, so it restored the DOM value it already believed in and,
+   * in doing so, moved the caret to the END of the field. Silently: nothing about
+   * the visible text changed, so there was no clue it had happened.
+   *
+   * From the gate operator's side that reads as: put the caret in the middle to fix
+   * a digit, press "-", nothing appears (fine, the mask inserts it) — press it again,
+   * still nothing — then press Backspace expecting to remove the dash and a REAL
+   * character disappears instead, from wherever the caret silently went. Which is
+   * exactly the report: "typing - does nothing, and after pressing it 2 times it
+   * starts deleting what is already written."
+   *
+   * Two things are therefore deliberate below. The caret is restored explicitly on
+   * every input event, including the ones that change nothing — that is the actual
+   * fix. And the canonical value is written back onto the DOM node directly rather
+   * than left to React's controlled-input restore, so the field cannot drift on a
+   * browser whose composition or autofill behaviour defeats that restore (this is a
+   * phone PWA; jsdom is not the environment that matters).
+   */
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const el = e.currentTarget;
+    const caret = el.selectionStart ?? el.value.length;
+    const codeCharsBefore = normalise(el.value.slice(0, caret)).length;
+
+    const clean = normalise(el.value);
+    const display = format(clean);
+
+    // Unconditional, and before setState: React will not resync a value it does not
+    // consider changed, so the DOM has to be corrected here.
+    el.value = display;
+    const next = caretAfterFormat(display, codeCharsBefore);
+    el.setSelectionRange(next, next);
+
+    setCode(clean);
+    setError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,12 +103,11 @@ const AccessCodeLoginComponent = ({ onSuccess, compact }: Props) => {
     setError(null);
     // The submit tap is the gesture that lets us start the AudioContext.
     unlockAudio();
-    const rawCode = code.replace(/-/g, "");
-    if (rawCode.length !== CODE_LENGTH) {
+    if (code.length !== CODE_LENGTH) {
       setError("Enter the full 8-character access code.");
       return;
     }
-    const accessCode = `${rawCode.slice(0, 4)}-${rawCode.slice(4)}`;
+    const accessCode = format(code);
     setIsSubmitting(true);
     const r = await api.post("auth/access-code", { accessCode, deviceId: getDeviceId() }, { timeoutMs: 10_000, untracked: true });
     setIsSubmitting(false);
@@ -71,11 +134,8 @@ const AccessCodeLoginComponent = ({ onSuccess, compact }: Props) => {
         label="Access code"
         name="accessCode"
         placeholder="XXXX-XXXX"
-        value={code}
-        onChange={(e) => {
-          setCode(formatCode(e.target.value));
-          setError(null);
-        }}
+        value={format(code)}
+        onChange={handleChange}
         autoCapitalize="characters"
         autoCorrect="off"
         autoComplete="one-time-code"
