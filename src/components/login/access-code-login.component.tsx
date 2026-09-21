@@ -133,13 +133,17 @@ const AccessCodeLoginComponent = ({ onSuccess, compact }: Props) => {
       <Input
         label="Access code"
         name="accessCode"
-        placeholder="XXXX-XXXX"
+        placeholder="0000-0000"
         value={format(code)}
         onChange={handleChange}
-        autoCapitalize="characters"
         autoCorrect="off"
         autoComplete="one-time-code"
-        inputMode="text"
+        // Access codes are digits only — `generateAccessCode` has produced NNNN-NNNN
+        // since it was written — so the gate operator gets a number pad, not a full
+        // keyboard to hunt through in a dark doorway. The dash is inserted by `format`,
+        // so the pad lacking one costs nothing. The formatter still accepts letters, so
+        // a pasted code in any case keeps working.
+        inputMode="numeric"
         enterKeyHint="go"
         error={error ?? undefined}
         helperText={error || compact ? undefined : "Access codes are event specific and may expire."}
