@@ -28,7 +28,6 @@ export interface ManifestMeta {
   window: { opensAt: string; closesAt: string };
   ticketTypes: Array<{ id: number; name: string; seated: boolean; sectionNum: number | null }>;
   allowedTicketTypeIds: number[];
-  entryInstructions: string | null;
   /** Generation of the last FULL sync; rows from older generations are swept. */
   gen: number;
   count: number;
@@ -105,7 +104,6 @@ function headerOf(page: ManifestPage): Omit<ManifestMeta, "gen" | "count" | "las
     window: page.window,
     ticketTypes: page.ticketTypes,
     allowedTicketTypeIds: page.allowedTicketTypeIds,
-    entryInstructions: page.entryInstructions,
   };
 }
 

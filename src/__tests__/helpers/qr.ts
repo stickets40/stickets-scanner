@@ -39,7 +39,6 @@ export function makePage(
       { id: 2, name: "VIP", seated: true, sectionNum: 4 },
     ],
     allowedTicketTypeIds: [],
-    entryInstructions: null,
     tickets: [],
     cursor: null,
     ...rest,

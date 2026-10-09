@@ -168,7 +168,6 @@ export const manifestPageSchema = z.object({
   window: z.object({ opensAt: z.string(), closesAt: z.string() }),
   ticketTypes: z.array(z.object({ id: z.number(), name: z.string(), seated: z.boolean(), sectionNum: z.number().nullable() })),
   allowedTicketTypeIds: z.array(z.number()),
-  entryInstructions: z.string().nullable(),
   tickets: z.array(manifestTicketSchema),
   cursor: z.string().nullable(),
   since: z.string().optional(),
