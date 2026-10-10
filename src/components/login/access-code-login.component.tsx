@@ -9,6 +9,7 @@ import { requestPersistentStorage } from "@/lib/idb";
 import { precacheShell } from "@/lib/sw-registration";
 import { sessionRestored } from "@/lib/runtime";
 import { useAuthStore } from "@/stores/auth.store";
+import { forgetLoginHandoff } from "@/lib/login-handoff";
 import { loginResultSchema } from "@/types/scanner.types";
 import { unlockAudio } from "@/lib/feedback";
 import Button from "@/components/ui/button";
@@ -47,13 +48,15 @@ interface Props {
   /** Called instead of navigating to /scan (inline re-auth). */
   onSuccess?: () => void;
   compact?: boolean;
+  /** A code from the organizer's hand-off link (#code=…), already cleaned. */
+  initialCode?: string;
 }
 
-const AccessCodeLoginComponent = ({ onSuccess, compact }: Props) => {
+const AccessCodeLoginComponent = ({ onSuccess, compact, initialCode }: Props) => {
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
   /** The canonical 8 characters, with no dash. The field renders `format(code)`. */
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState(() => normalise(initialCode ?? ""));
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -121,6 +124,7 @@ const AccessCodeLoginComponent = ({ onSuccess, compact }: Props) => {
       return;
     }
     login(parsed.data.scanner, "access_code");
+    forgetLoginHandoff();
     void requestPersistentStorage();
     precacheShell();
     sessionRestored();

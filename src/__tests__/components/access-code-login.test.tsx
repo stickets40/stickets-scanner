@@ -53,6 +53,11 @@ describe("access code field", () => {
   // Access codes are digits only (NNNN-NNNN since the generator was written). A text
   // keyboard makes a gate operator hunt for digits in the dark; the number pad has no
   // dash, which is fine because the field inserts it.
+  it("is prefilled from the organizer's hand-off link (D26)", () => {
+    render(<AccessCodeLoginComponent initialCode="12345678" />);
+    expect(field().value).toBe("1234-5678");
+  });
+
   it("asks the phone for a number pad", () => {
     render(<AccessCodeLoginComponent />);
     expect(field()).toHaveAttribute("inputmode", "numeric");

@@ -1,18 +1,29 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import Image from "next/image";
 import { ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Text } from "@/components/ui/text";
 import AccountLoginComponent from "./account-login.component";
 import AccessCodeLoginComponent from "./access-code-login.component";
+import { takeLoginHandoff, type LoginHandoff } from "@/lib/login-handoff";
 
 type LoginTab = "account" | "access_code";
 
 const LoginTabsComponent = () => {
   const [activeTab, setActiveTab] = useState<LoginTab>("access_code");
+  const [handoff, setHandoff] = useState<LoginHandoff>(null);
   const baseId = useId();
+
+  // The organizer's hand-off link prefills the form (D26). Read after mount: the
+  // server renders without the fragment, so a first-render read would not hydrate.
+  useEffect(() => {
+    const found = takeLoginHandoff();
+    if (!found) return;
+    setHandoff(found);
+    setActiveTab(found.kind === "username" ? "account" : "access_code");
+  }, []);
 
   const tabId = (t: LoginTab) => `${baseId}-tab-${t}`;
   const panelId = (t: LoginTab) => `${baseId}-panel-${t}`;
@@ -75,10 +86,19 @@ const LoginTabsComponent = () => {
             id={panelId(activeTab)}
             aria-labelledby={tabId(activeTab)}
           >
+            {/* Keyed on the hand-off so the form remounts with it prefilled. */}
             {activeTab === "account" ? (
-              <AccountLoginComponent />
+              <AccountLoginComponent
+                key={handoff?.kind === "username" ? handoff.username : "blank"}
+                initialUsername={
+                  handoff?.kind === "username" ? handoff.username : undefined
+                }
+              />
             ) : (
-              <AccessCodeLoginComponent />
+              <AccessCodeLoginComponent
+                key={handoff?.kind === "code" ? handoff.code : "blank"}
+                initialCode={handoff?.kind === "code" ? handoff.code : undefined}
+              />
             )}
           </div>
         </div>

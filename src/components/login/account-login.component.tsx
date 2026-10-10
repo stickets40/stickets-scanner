@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { Lock, User } from "lucide-react";
@@ -10,6 +10,7 @@ import { requestPersistentStorage } from "@/lib/idb";
 import { precacheShell } from "@/lib/sw-registration";
 import { sessionRestored } from "@/lib/runtime";
 import { useAuthStore } from "@/stores/auth.store";
+import { forgetLoginHandoff } from "@/lib/login-handoff";
 import { loginResultSchema } from "@/types/scanner.types";
 import { unlockAudio } from "@/lib/feedback";
 import Button from "@/components/ui/button";
@@ -24,17 +25,27 @@ interface AccountFormData {
 interface Props {
   onSuccess?: () => void;
   compact?: boolean;
+  /** A username from the organizer's hand-off link (#username=…). */
+  initialUsername?: string;
 }
 
-const AccountLoginComponent = ({ onSuccess, compact }: Props) => {
+const AccountLoginComponent = ({ onSuccess, compact, initialUsername }: Props) => {
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
   const [error, setError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
+    setFocus,
     formState: { isSubmitting },
-  } = useForm<AccountFormData>();
+  } = useForm<AccountFormData>({
+    defaultValues: { username: initialUsername ?? "", password: "" },
+  });
+
+  // Prefilled by the hand-off link: the password is all that is left to type.
+  useEffect(() => {
+    if (initialUsername) setFocus("password");
+  }, [initialUsername, setFocus]);
 
   const onSubmit = async (data: AccountFormData) => {
     setError(null);
@@ -50,6 +61,7 @@ const AccountLoginComponent = ({ onSuccess, compact }: Props) => {
       return;
     }
     login(parsed.data.scanner, "account");
+    forgetLoginHandoff();
     void requestPersistentStorage();
     precacheShell();
     sessionRestored();
